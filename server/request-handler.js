@@ -11,6 +11,16 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
+//var storage = require('./data.js');
+var fs = require('fs');
+
+const getData = function(cb) {
+  fs.readFile(__dirname + '/data.txt', 'utf8', function read(err, data) {
+    console.log(JSON.parse(data));
+    var storage = JSON.parse(data);
+    cb(storage);
+  });
+};
 
 var requestHandler = function(request, response) {
   // Request and Response come from node's http module.
@@ -21,29 +31,59 @@ var requestHandler = function(request, response) {
   //
   // Documentation for both request and response can be found in the HTTP section at
   // http://nodejs.org/documentation/api/
-
+  
   // Do some basic logging.
   //
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
-
+  if (request.url === '/classes/messages') {
+    
+  }
+  
   // The outgoing status.
   var statusCode = 200;
+  
+  if ( request.method === 'POST' ) {
+    getData((storage)=>{
+      var headers = defaultCorsHeaders;
+      headers['Content-Type'] = 'application/json';
+      response.writeHead(statusCode, headers);
+      statusCode = 201;
+      let body = '';
+      request.on('data', function (chunk) {
+        body += chunk;
+      });
+      request.on('end', function() {
+        //append storage
+        //overwrite file
+        response.end(JSON.stringify(storage));
 
+      });
+    });
+  }
+  if ( request.method === 'GET' ) {
+    getData((storage)=>{
+      var headers = defaultCorsHeaders;
+      headers['Content-Type'] = 'application/json';
+      response.writeHead(statusCode, headers);
+      response.end(JSON.stringify(storage));
+    });
+  }
   // See the note below about CORS headers.
-  var headers = defaultCorsHeaders;
+  //var headers = defaultCorsHeaders;
 
   // Tell the client we are sending them plain text.
   //
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = 'text/plain';
-
+  
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
-  response.writeHead(statusCode, headers);
+  // headers['Content-Type'] = 'application/json';
+  // response.writeHead(statusCode, headers);
+  // response.end(JSON.stringify(storage));
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
@@ -52,7 +92,7 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end('Hello, World!');
+  //response.end(JSON.stringify(storage));
 };
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
@@ -71,3 +111,15 @@ var defaultCorsHeaders = {
   'access-control-max-age': 10 // Seconds.
 };
 
+module.exports = requestHandler;
+
+
+
+// fs.readFile('results.json', function (err, data) {
+//   var json = JSON.parse(data);
+//   json.push('search result: ' + currentSearchResult);    
+//   fs.writeFile("results.json", JSON.stringify(json), function(err){
+//     if (err) throw err;
+//     console.log('The "data to append" was appended to file!');
+//   });
+// })
